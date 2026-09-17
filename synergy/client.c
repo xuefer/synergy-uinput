@@ -149,7 +149,7 @@ void sProcess(SynergyClient *client)
         }
 
         size = sRead(client, message, 8192);
-        if(!message)
+        if(!size)
         {
             sDisconnect(client, "read error");
             continue;

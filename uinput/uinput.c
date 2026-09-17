@@ -23,27 +23,32 @@
 int32_t uInitializeMouse(uint16_t width, uint16_t height)
 {
     int32_t device = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-    if(device < 0)
-    {
+    if (device < 0) {
         perror("Cannot open");
         return -1;
     }
 
-    if(ioctl(device, UI_SET_EVBIT, EV_SYN) < 0) {perror("IOCTL error"); close(device); return -1;}
-    if(ioctl(device, UI_SET_EVBIT, EV_KEY) < 0) {perror("IOCTL error"); close(device); return -1;}
-    if(ioctl(device, UI_SET_EVBIT, EV_ABS) < 0) {perror("IOCTL error"); close(device); return -1;}
-    if(ioctl(device, UI_SET_EVBIT, EV_REL) < 0) {perror("IOCTL error"); close(device); return -1;}
+    if (ioctl(device, UI_SET_EVBIT, EV_SYN) < 0) goto error;
+    if (ioctl(device, UI_SET_EVBIT, EV_KEY) < 0) goto error;
+    if (ioctl(device, UI_SET_EVBIT, EV_ABS) < 0) goto error;
+    if (ioctl(device, UI_SET_EVBIT, EV_REL) < 0) goto error;
 
     // MOUSE SUPPORT
-    if(ioctl(device, UI_SET_KEYBIT, BTN_MOUSE) < 0) {perror("IOCTL error"); close(device); return -1;}
-    if(ioctl(device, UI_SET_RELBIT, REL_WHEEL) < 0) {perror("IOCTL error"); close(device); return -1;}
-    if(ioctl(device, UI_SET_RELBIT, REL_HWHEEL) < 0) {perror("IOCTL error"); close(device); return -1;}
+    if (ioctl(device, UI_SET_KEYBIT, BTN_MOUSE) < 0) goto error;
 
-    for(uint32_t b = 0, buttons = sizeof(BTN_MAP) / sizeof(BTN_MAP[0]); b < buttons; ++ b)
-        if(ioctl(device, UI_SET_KEYBIT, BTN_MAP[b]) < 0) {perror("IOCTL error"); close(device); return -1;}
+    for (uint32_t b = 0, buttons = sizeof(BTN_MAP) / sizeof(BTN_MAP[0]); b < buttons; ++b)
+        if (ioctl(device, UI_SET_KEYBIT, BTN_MAP[b]) < 0) goto error;
 
-    if(ioctl(device, UI_SET_ABSBIT, ABS_X) < 0) {perror("IOCTL error"); close(device); return -1;}
-    if(ioctl(device, UI_SET_ABSBIT, ABS_Y) < 0) {perror("IOCTL error"); close(device); return -1;}
+    if (ioctl(device, UI_SET_PROPBIT, INPUT_PROP_POINTER) < 0) goto error;
+
+    if (ioctl(device, UI_SET_RELBIT, REL_X) < 0) goto error;
+    if (ioctl(device, UI_SET_RELBIT, REL_Y) < 0) goto error;
+
+    if (ioctl(device, UI_SET_RELBIT, REL_WHEEL) < 0) goto error;
+    if (ioctl(device, UI_SET_RELBIT, REL_HWHEEL) < 0) goto error;
+
+    if (ioctl(device, UI_SET_ABSBIT, ABS_X) < 0) goto error;
+    if (ioctl(device, UI_SET_ABSBIT, ABS_Y) < 0) goto error;
 
     struct uinput_user_dev uidev;
     memset(&uidev, 0, sizeof(uidev));
@@ -56,11 +61,16 @@ int32_t uInitializeMouse(uint16_t width, uint16_t height)
     uidev.absmax[ABS_X] = width;
     uidev.absmax[ABS_Y] = height;
 
-    if(write(device, &uidev, sizeof(uidev)) < 0) {perror("Write error"); close(device); return -1;}
-    if(ioctl(device, UI_DEV_CREATE) < 0) {perror("IOCTL error"); close(device); return -1;}
+    if (write(device, &uidev, sizeof(uidev)) < 0) goto error;
+    if (ioctl(device, UI_DEV_CREATE) < 0) goto error;
 
     sleep(2);
     return device;
+
+error:
+    perror("IOCTL error");
+    close(device);
+    return -1;
 }
 
 int32_t uInitializeKeyboard(void)
@@ -152,8 +162,6 @@ void uMouseRelativeMotion(int32_t device, const int16_t dx, const int16_t dy)
         ev.value = dx;
         if(write(device, &ev, sizeof(ev)) < 0)
             perror("Write error");
-
-        uSync(device);
     }
     
     if(dy)
@@ -162,7 +170,10 @@ void uMouseRelativeMotion(int32_t device, const int16_t dx, const int16_t dy)
         ev.value = dy;
         if(write(device, &ev, sizeof(ev)) < 0)
             perror("Write error");
+    }
 
+    if (dx || dy)
+    {
         uSync(device);
     }
 }

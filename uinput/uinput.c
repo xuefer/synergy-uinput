@@ -189,20 +189,21 @@ void uMouseWheel(int32_t device, const int16_t dx, const int16_t dy)
     if(dx)
     {
         ev.code = REL_HWHEEL;
-        ev.value = dx < 0xFF ? 1 : -1;
+        ev.value = dx > 0 ? 1 : -1;
         if(write(device, &ev, sizeof(ev)) < 0)
             perror("Write error");
-
-        uSync(device);
     }
 
     if(dy)
     {
         ev.code = REL_WHEEL;
-        ev.value = dy < 0xFF ? 1 : -1;
+        ev.value = dy > 0 ? 1 : -1;
         if(write(device, &ev, sizeof(ev)) < 0)
             perror("Write error");
+    }
 
+    if (dx || dy)
+    {
         uSync(device);
     }
 }

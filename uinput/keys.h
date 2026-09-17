@@ -15,8 +15,8 @@ static const uint16_t BTN_MAP[] =
     [1]                         = BTN_LEFT,
     [2]                         = BTN_MIDDLE,
     [3]                         = BTN_RIGHT,
-    [4]                         = BTN_BACK,         // FIXME: MOUSE WHEEL NOT WORKING!
-    [5]                         = BTN_FORWARD,      // ...
+    [4]                         = BTN_BACK,
+    [5]                         = BTN_FORWARD,
     [6]                         = BTN_SIDE,
 };
 
